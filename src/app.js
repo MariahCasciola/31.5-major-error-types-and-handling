@@ -6,7 +6,20 @@ const notes = require(path.resolve("src/data/notes-data"));
 
 app.use(express.json());
 
-app.get("/notes/:noteId", (req, res) => {
+function noteExists(req, res, next){
+  const noteId = Number(req.params.noteId);
+  const foundNote = notes.find((note) => note.id === noteId);
+  if (foundNote) {
+    next();
+  } else {
+    next({
+      status: 404,
+      message: `Note id not found: ${req.params.noteId}`,
+    });
+  }
+}
+
+app.get("/notes/:noteId", noteExists, (req, res) => {
   const noteId = Number(req.params.noteId);
   const foundNote = notes.find((note) => note.id === noteId);
   if (foundNote) {

@@ -12,7 +12,10 @@ app.get("/notes/:noteId", (req, res) => {
   if (foundNote) {
     res.json({ data: foundNote });
   } else {
-    return next(`Note id not found: ${req.params.noteId}`);
+    return next({
+      status: 404,
+      message: `Note id not found: ${req.params.noteId}`,
+    });
   }
 });
 
@@ -22,7 +25,7 @@ app.get("/notes", (req, res) => {
 
 let lastNoteId = notes.reduce((maxId, note) => Math.max(maxId, note.id), 0);
 
-app.post("/notes", (req, res) => {
+app.post("/notes",bodyHasTextProperty, (req, res) => {
   const { data: { text } = {} } = req.body;
   if (text) {
     const newNote = {
@@ -32,19 +35,33 @@ app.post("/notes", (req, res) => {
     notes.push(newNote);
     res.status(201).json({ data: newNote });
   } else {
-    res.sendStatus(400);
+    next();
   }
 });
 
+//
+function bodyHasTextProperty(req, res, next) {
+  const { data: { text } = {} } = req.body;
+  if (text) {
+    next();
+  } else {
+    next({ status: 400, message: "A 'text' property is required." });
+  }
+}
+
 // Not found handler
 app.use((req, res, next) => {
-  next(`Not found: ${req.originalUrl}`);
+  next({
+    status: 404,
+    message: `Not found: ${req.originalUrl}`,
+  });
 });
 
 // Error handler
 app.use((error, req, res, next) => {
   console.error(error);
-  res.status(500).send(error);
+  const { status = 500, message = "Something went wrong!" } = error;
+  res.status(status).json({ error: message });
 });
 
 module.exports = app;
